@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect } from "react";
-import { registerRequest, loginRequest } from "../api/auth";
+import { registerRequest, loginRequest, verifyTokenRequest } from "../api/auth";
+import Cookies from 'js-cookie'
 
 export const AuthContext = createContext();
 
@@ -16,6 +17,7 @@ export const AuthProvider = ({children}) => {
     const [isAuthenticated, setisAuthenticated] = useState(false);
     const [registerErrors, setRegisterErrors] = useState([]);
     const [singinErrors, setSinginErrors] = useState([]);
+    const [loading, setLoading] = useState(true)
 
     const singup =  async (user) => {
         try {
@@ -31,7 +33,7 @@ export const AuthProvider = ({children}) => {
         try {
             const res = await loginRequest(user);
             setUser(res.data);
-            console.log(res);
+            setisAuthenticated(true);
         } catch (error) {
             console.log(error.response.data);
             if (Array.isArray(error.response.data.message)){
@@ -60,6 +62,35 @@ export const AuthProvider = ({children}) => {
         }
     }, [registerErrors])
 
+    useEffect(() => {
+        async function checkLogin() {
+            const cookies = Cookies.get();
+
+            if(!cookies.token) {
+                setisAuthenticated(false)
+                setLoading(false)
+                return setUser(null)
+            }
+                try {
+                    const res = await verifyTokenRequest(cookies.token)
+                    if (!res.data) {
+                        setisAuthenticated(false)
+                        setLoading(false)
+                        return
+                    }
+    
+                    setisAuthenticated(true)
+                    setUser(res.data)
+                    setLoading(false)
+                } catch (error) {
+                    setisAuthenticated(false)
+                    setLoading(false)
+                }
+            
+        }
+        checkLogin()
+    }, [])
+
   return (
     <AuthContext.Provider 
     value={{singup, 
@@ -67,7 +98,8 @@ export const AuthProvider = ({children}) => {
     isAuthenticated, 
     registerErrors, 
     singin, 
-    singinErrors
+    singinErrors,
+    loading
     }}>
         {children}
     </AuthContext.Provider>

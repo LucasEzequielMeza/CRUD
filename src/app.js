@@ -10,7 +10,8 @@ const app = express();
 
 app.use(cors({
     origin: 'http://localhost:5173',
-})); // habilita CORS para que el cliente pueda hacer peticiones al servidor
+    credentials: true,
+})); 
 
 app.use(morgan('dev'));
 
